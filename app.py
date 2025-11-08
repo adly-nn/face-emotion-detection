@@ -91,19 +91,23 @@ def save_to_database(name, email, age, emotion, image_path):
 # ============================================================================
 
 def load_emotion_model():
-    """Load the trained emotion detection model"""
+    """Load the trained emotion detection model (OPTIMIZED)"""
     try:
-        model_path = os.path.join(os.getcwd(), 'face_emotionModel.h5')
-        if not os.path.exists(model_path):
-            print("❌ Model file not found:", model_path)
-            return None
-        model = keras.models.load_model(model_path, compile=False)
+        model = keras.models.load_model('face_emotionModel.h5', compile=False)
+        # Manually compile with simpler optimizer for inference
+        model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         print("✓ Model loaded successfully")
+        
+        # Warm up the model with a dummy prediction
+        dummy_input = np.zeros((1, 48, 48, 1), dtype=np.float32)
+        _ = model.predict(dummy_input, verbose=0)
+        print("✓ Model warmed up")
+        
         return model
     except Exception as e:
         print(f"Error loading model: {e}")
         return None
-
+    
 emotion_model = load_emotion_model()
 
 # ============================================================================
@@ -114,14 +118,28 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def preprocess_image(image_path):
-    """Preprocess image for emotion detection"""
+    """
+    Preprocess image for emotion detection (OPTIMIZED)
+    """
     try:
-        img = cv2.imread(image_path)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        resized = cv2.resize(gray, (48, 48))
-        normalized = resized / 255.0
+        # Read image directly as grayscale
+        gray = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+        
+        if gray is None:
+            print(f"Error: Could not read image at {image_path}")
+            return None
+        
+        # Resize to 48x48 (faster than multiple operations)
+        resized = cv2.resize(gray, (48, 48), interpolation=cv2.INTER_AREA)
+        
+        # Normalize to 0-1
+        normalized = resized.astype('float32') / 255.0
+        
+        # Reshape for model (1, 48, 48, 1)
         final = normalized.reshape(1, 48, 48, 1)
+        
         return final
+        
     except Exception as e:
         print(f"Error preprocessing image: {e}")
         return None
