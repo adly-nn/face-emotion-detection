@@ -93,7 +93,7 @@ def save_to_database(name, email, age, emotion, image_path):
 def load_emotion_model():
     """Load the trained emotion detection model (OPTIMIZED)"""
     try:
-        model = keras.models.load_model('face_emotionModel.h5', compile=False)
+        model = keras.models.load_model('face_emotionModel_compressed.h5', compile=False)
         # Manually compile with simpler optimizer for inference
         model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
         print("✓ Model loaded successfully")
